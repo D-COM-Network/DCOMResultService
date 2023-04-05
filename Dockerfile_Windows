@@ -1,0 +1,20 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+WORKDIR C:/ProgramData
+RUN Invoke-WebRequest 'https://download.oracle.com/java/18/latest/jdk-18_windows-x64_bin.exe' -OutFile 'java.exe'
+RUN Invoke-WebRequest 'https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.65/bin/apache-tomcat-9.0.65-windows-x64.zip' -OutFile 'tomcat.zip'
+RUN Expand-Archive tomcat.zip -DestinationPath C:/ProgramData
+RUN Remove-Item tomcat.zip
+RUN Start-Process -filepath java.exe -passthru -wait -argumentlist "/s,INSTALLDIR=c:\Java\jre1.8.0_91,/L,install64.log"
+ENV JAVA_HOME C:/Java/jre1.8.0_91
+RUN Remove-Item java.exe
+RUN Rename-Item apache-tomcat-9.0.65 Tomcat9
+RUN Remove-Item 'C:/ProgramData/Tomcat9/webapps' -Recurse
+RUN New-Item 'C:/ProgramData/Tomcat9/webapps' -itemType Directory
+ENV DCOMCertificatePath C:/ProgramData/Tomcat9/ResultService.pem
+ENV DCOMCertificatePassword a5b50932
+ADD target/ResultService.war C:/ProgramData/Tomcat9/webapps/ROOT.war
+ADD ResultService.pem C:/ProgramData/Tomcat9/ResultService.pem
+WORKDIR C:/ProgramData/Tomcat9/bin
+EXPOSE 8080
+CMD ["catalina.bat","run"]

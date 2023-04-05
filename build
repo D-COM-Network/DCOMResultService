@@ -1,0 +1,18 @@
+#!/bin/bash
+UNAME=$(uname)
+if [[ "$UNAME" == "CYGWIN"* || "$UNAME" == "MINGW"* ]] ; then
+    alias docker='winpty docker'
+fi
+REGISTRY_PATH="registry.git.cf.ac.uk/dcom_cih"
+docker login $REGISTRY_PATH	
+mvn clean
+mvn package
+if [[ $(uname -m) == 'arm64' ]]; then
+	docker buildx build --platform linux/amd64 --push -t $REGISTRY_PATH/resultservice .
+elif [[ "$UNAME" == "CYGWIN"* || "$UNAME" == "MINGW"* ]] ; then
+  docker build -t $REGISTRY_PATH/resultservice -f Dockerfile_Windows .
+  docker push $REGISTRY_PATH/resultservice
+else
+  docker build -t $REGISTRY_PATH/resultservice .
+  docker push $REGISTRY_PATH/resultservice
+fi
